@@ -1,0 +1,7 @@
+ERROR => Log
+@@flowname: 'Path'
+External.RunFlow FlowId: 'a975f8b1-f4c7-490a-9b63-877706824fd6' @User_Path=> User_Path
+File.WriteText File: $'''%User_Path%\\Documents\\Log''' TextToWrite: $'''----------------------------------------------------------------------------
+%Log%''' AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+@@flowname: 'Logging'
+DISABLE External.RunFlow FlowId: '9c54e46f-9536-40c7-9556-658480e079ba' @File_Path: $'''%User_Path%\\Documents\\김희연\\Log''' @Logging_Text: Log

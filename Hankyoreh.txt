@@ -1,0 +1,50 @@
+
+FUNCTION Hankyoreh GLOBAL
+    WebAutomation.GoToWebPage.GoToWebPage BrowserInstance: News_Browser Url: $'''https://www.hani.co.kr/arti/society/internalmove/list1.html''' WaitForPageToLoadTimeout: 60
+    Excel.SetActiveWorksheet.ActivateWorksheetByName Instance: ExcelInstance Name: $'''한겨레'''
+    WebAutomation.ExtractData.ExtractTable BrowserInstance: News_Browser Control: $'''html > body > div:eq(2) > div:eq(0) > div:eq(0) > div > div > div:eq(2) > div''' ExtractionParameters: {[$'''div > p > span''', $'''Own Text''', $'''''', $'''Value #1'''], [$'''div > h4 > a''', $'''Own Text''', $'''''', $'''Value #2'''], [$'''div > h4 > a''', $'''Href''', $'''''', $'''Value #3'''] } PostProcessData: False TimeoutInSeconds: 60 ExtractedData=> DataFromWebPage
+    SET Webpagecount TO 2
+    SET ExcelrowCount TO 1
+    LOOP FOREACH NewsData IN DataFromWebPage
+        SET Time TO NewsData[0]
+        SET NewsTitle TO NewsData[1]
+        SET NewsURL TO NewsData[2]
+        Variables.IncreaseVariable Value: ExcelrowCount IncrementValue: 1
+        Text.ConvertTextToDateTime.ToDateTimeCustomFormat Text: Time CustomFormat: $'''yyyy-MM-dd HH:mm''' DateTime=> Time
+        Text.ConvertDateTimeToText.FromCustomDateTime DateTime: Time CustomFormat: $'''yy/MM/dd HH\'시\'''' Result=> Time
+        Text.Replace Text: Time TextToFind: $'''-''' IsRegEx: False IgnoreCase: False ReplaceWith: $'''/''' ActivateEscapeSequences: False Result=> Time
+        Text.ConvertDateTimeToText.FromDateTime DateTime: Time StandardFormat: Text.WellKnownDateTimeFormat.ShortDate Result=> Today
+        IF CurrentDate <> Today THEN
+            EXIT LOOP
+        END
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: ExcelrowCount - 1 Column: 1 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsTitle Column: 2 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: Time Column: 3 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsURL Column: 4 Row: ExcelrowCount
+    END
+    LOOP WHILE (Webpagecount) >= (2)
+        WebAutomation.GoToWebPage.GoToWebPage BrowserInstance: News_Browser Url: $'''https://www.hani.co.kr/arti/society/internalmove/list%Webpagecount%.html''' WaitForPageToLoadTimeout: 60
+        Variables.IncreaseVariable Value: Webpagecount IncrementValue: 1
+        WebAutomation.ExtractData.ExtractTable BrowserInstance: News_Browser Control: $'''html > body > div:eq(2) > div:eq(0) > div:eq(0) > div > div > div:eq(2) > div''' ExtractionParameters: {[$'''div > p > span''', $'''Own Text''', $'''''', $'''Value #1'''], [$'''div > h4 > a''', $'''Own Text''', $'''''', $'''Value #2'''], [$'''div > h4 > a''', $'''Href''', $'''''', $'''Value #3'''] } PostProcessData: False TimeoutInSeconds: 60 ExtractedData=> DataFromWebPage
+        LOOP FOREACH NewsData IN DataFromWebPage
+            SET Time TO NewsData[0]
+            SET NewsTitle TO NewsData[1]
+            SET NewsURL TO NewsData[2]
+            Variables.IncreaseVariable Value: ExcelrowCount IncrementValue: 1
+            Text.ConvertTextToDateTime.ToDateTimeCustomFormat Text: Time CustomFormat: $'''yyyy-MM-dd HH:mm''' DateTime=> Time
+            Text.ConvertDateTimeToText.FromCustomDateTime DateTime: Time CustomFormat: $'''yy/MM/dd HH\'시\'''' Result=> Time
+            Text.Replace Text: Time TextToFind: $'''-''' IsRegEx: False IgnoreCase: False ReplaceWith: $'''/''' ActivateEscapeSequences: False Result=> Time
+            Text.ConvertDateTimeToText.FromDateTime DateTime: Time StandardFormat: Text.WellKnownDateTimeFormat.ShortDate Result=> Today
+            IF CurrentDate = Today THEN
+                Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: ExcelrowCount - 1 Column: 1 Row: ExcelrowCount
+                Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsTitle Column: 2 Row: ExcelrowCount
+                Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: Time Column: 3 Row: ExcelrowCount
+                Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsURL Column: 4 Row: ExcelrowCount
+            END
+            EXIT LOOP
+        END
+        IF CurrentDate <> Today THEN
+            EXIT LOOP
+        END
+    END
+END FUNCTION

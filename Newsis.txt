@@ -1,0 +1,53 @@
+WebAutomation.GoToWebPage.GoToWebPage BrowserInstance: News_Browser Url: $'''https://newsis.com/squ/section/?cid=16000&scid=10900&sscid=10902''' WaitForPageToLoadTimeout: 60
+Excel.SetActiveWorksheet.ActivateWorksheetByName Instance: ExcelInstance Name: $'''뉴시스'''
+WebAutomation.ExtractData.ExtractTable BrowserInstance: News_Browser Control: $'''html > body > div:eq(0) > div:eq(4) > div:eq(2) > div:eq(0) > div:eq(0) > ul > li''' ExtractionParameters: {[$'''div > div > p:eq(2)''', $'''Own Text''', $'''''', $'''Value #1'''], [$'''div > div > p:eq(0) > a''', $'''Own Text''', $'''''', $'''Value #2'''], [$'''div > div > p:eq(0) > a''', $'''Href''', $'''''', $'''Value #3'''] } PostProcessData: False TimeoutInSeconds: 60 ExtractedData=> DataFromWebPage
+SET Webpagecount TO 2
+SET ExcelrowCount TO 1
+LOOP FOREACH NewsData IN DataFromWebPage
+    SET Time TO NewsData[0]
+    # 시간만 뽑아내기 위해 정규식 표현을 사용해서 List로 숫자만 저장
+    Text.ParseText.RegexParse Text: Time TextToFind: $'''[0-9]''' StartingPosition: 0 IgnoreCase: False Matches=> Time
+    Text.JoinText.Join List: Time Result=> Time
+    SET NewsTitle TO NewsData[1]
+    SET NewsURL TO NewsData[2]
+    Variables.IncreaseVariable Value: ExcelrowCount IncrementValue: 1
+    Text.ConvertTextToDateTime.ToDateTimeCustomFormat Text: Time CustomFormat: $'''yyyyMMddHHmmss''' DateTime=> Time
+    Text.ConvertDateTimeToText.FromCustomDateTime DateTime: Time CustomFormat: $'''yy/MM/dd HH\'시\'''' Result=> Time
+    Text.Replace Text: Time TextToFind: $'''-''' IsRegEx: False IgnoreCase: False ReplaceWith: $'''/''' ActivateEscapeSequences: False Result=> Time
+    Text.ConvertDateTimeToText.FromDateTime DateTime: Time StandardFormat: Text.WellKnownDateTimeFormat.ShortDate Result=> Today
+    IF CurrentDate <> Today THEN
+        EXIT LOOP
+    END
+    Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: ExcelrowCount - 1 Column: 1 Row: ExcelrowCount
+    Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsTitle Column: 2 Row: ExcelrowCount
+    Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: Time Column: 3 Row: ExcelrowCount
+    Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsURL Column: 4 Row: ExcelrowCount
+END
+LOOP WHILE (Webpagecount) >= (2)
+    WebAutomation.GoToWebPage.GoToWebPage BrowserInstance: News_Browser Url: $'''https://newsis.com/squ/section/?cid=16000&scid=10900&sscid=10902&page=%Webpagecount%''' WaitForPageToLoadTimeout: 60
+    Variables.IncreaseVariable Value: Webpagecount IncrementValue: 1
+    WebAutomation.ExtractData.ExtractTable BrowserInstance: News_Browser Control: $'''html > body > div:eq(0) > div:eq(4) > div:eq(2) > div:eq(0) > div:eq(0) > ul > li''' ExtractionParameters: {[$'''div > div > p:eq(2)''', $'''Own Text''', $'''''', $'''Value #1'''], [$'''div > div > p:eq(0) > a''', $'''Own Text''', $'''''', $'''Value #2'''], [$'''div > div > p:eq(0) > a''', $'''Href''', $'''''', $'''Value #3'''] } PostProcessData: False TimeoutInSeconds: 60 ExtractedData=> DataFromWebPage
+    LOOP FOREACH NewsData IN DataFromWebPage
+        SET Time TO NewsData[0]
+        Text.ParseText.RegexParse Text: Time TextToFind: $'''[0-9]''' StartingPosition: 0 IgnoreCase: False Matches=> Time
+        Text.JoinText.Join List: Time Result=> Time
+        SET NewsTitle TO NewsData[1]
+        SET NewsURL TO NewsData[2]
+        Variables.IncreaseVariable Value: ExcelrowCount IncrementValue: 1
+        Text.ConvertTextToDateTime.ToDateTimeCustomFormat Text: Time CustomFormat: $'''yyyyMMddHHmmss''' DateTime=> Time
+        Text.ConvertDateTimeToText.FromCustomDateTime DateTime: Time CustomFormat: $'''yy/MM/dd HH\'시\'''' Result=> Time
+        Text.Replace Text: Time TextToFind: $'''-''' IsRegEx: False IgnoreCase: False ReplaceWith: $'''/''' ActivateEscapeSequences: False Result=> Time
+        Text.ConvertDateTimeToText.FromDateTime DateTime: Time StandardFormat: Text.WellKnownDateTimeFormat.ShortDate Result=> Today
+        IF CurrentDate <> Today THEN
+            EXIT LOOP
+        END
+        Excel.GetActiveCell Instance: ExcelInstance ActiveCellRowIndex=> ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: ExcelrowCount - 1 Column: 1 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsTitle Column: 2 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: Time Column: 3 Row: ExcelrowCount
+        Excel.WriteToExcel.WriteCell Instance: ExcelInstance Value: NewsURL Column: 4 Row: ExcelrowCount
+    END
+    IF CurrentDate <> Today THEN
+        EXIT LOOP
+    END
+END

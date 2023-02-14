@@ -1,0 +1,16 @@
+BLOCK Error_
+ON BLOCK ERROR
+
+END
+    # 뉴스 기사를 가져오기 전 기본 세팅
+    CALL Setting
+    # 연합뉴스 기사
+    CALL Yunhap
+    # 한겨레 기사
+    CALL Hankyoreh
+    # 뉴시스 기사
+    CALL Newsis
+    # 메일 보내기
+    CALL Mail
+END
+CALL Logging
